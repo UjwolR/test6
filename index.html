@@ -1,285 +1,409 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.9/angular.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Order Book Engine with LTP</title>
     <style>
       body {
         font-family: Arial, sans-serif;
-        background-color: #e0e5ec;
+        background-color: #f0f0f0;
         color: #333;
         margin: 0;
         padding: 0;
+        background-image: url("https://www.transparenttextures.com/patterns/asfalt-dark.png"); /* Subtle texture */
       }
+
       .container {
-        max-width: 800px;
-        margin: 20px auto;
+        width: 80%;
+        margin: 0 auto;
         padding: 20px;
-        background-color: #e0e5ec;
-        border-radius: 15px;
-        box-shadow: 10px 10px 20px #c5cace, -10px -10px 20px #ffffff;
       }
-      h2 {
-        color: #333;
+
+      h1 {
         text-align: center;
+        font-size: 2.5em;
+        color: #3c3c3c;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2); /* Text shadow for depth */
       }
-      .price-list {
+
+      .order-form,
+      .market-order-form {
+        display: flex;
+        justify-content: space-between;
         margin-bottom: 30px;
-        background-color: #e0e5ec;
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      }
+
+      .order-form input,
+      .market-order-form input,
+      .order-form button,
+      .market-order-form button {
         border-radius: 12px;
-        padding: 15px;
-        box-shadow: inset 6px 6px 12px #c5cace, inset -6px -6px 12px #ffffff;
-      }
-      .price-list ul {
-        list-style: none;
-        padding: 0;
-      }
-      .price-list li {
-        display: flex;
-        justify-content: space-between;
-        padding: 10px;
-        margin-bottom: 10px;
-        border-radius: 10px;
-        background-color: #e0e5ec;
-        box-shadow: inset 4px 4px 8px #c5cace, inset -4px -4px 8px #ffffff;
-      }
-      .price-up {
-        color: #4caf50;
-      }
-      .price-down {
-        color: #f44336;
-      }
-      .percentage-up {
-        color: #4caf50;
-      }
-      .percentage-down {
-        color: #f44336;
+        border: 2px solid #ccc;
+        font-size: 1.1em;
+        padding: 12px;
+        margin: 0 10px;
+        transition: all 0.3s ease;
       }
 
-      .order-book-section {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 20px;
+      .order-form input,
+      .market-order-form input {
+        width: 30%;
+        background-color: #fff;
+        box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
       }
+
+      .order-form input:focus,
+      .market-order-form input:focus {
+        background-color: #e6f7ff;
+        box-shadow: inset 0 0 5px rgba(0, 0, 255, 0.3);
+        border-color: #80b3ff;
+        outline: none;
+      }
+
+      .order-form button,
+      .market-order-form button {
+        background-color: #4caf50;
+        color: white;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      .order-form button:hover,
+      .market-order-form button:hover {
+        background-color: #45a049;
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+      }
+
       .order-book {
-        background-color: #e0e5ec;
-        border-radius: 15px;
-        padding: 15px;
-        box-shadow: inset 6px 6px 12px #c5cace, inset -6px -6px 12px #ffffff;
-      }
-      .order-book h3 {
-        color: #333;
-        font-size: 18px;
-      }
-      .order-header {
         display: flex;
         justify-content: space-between;
-        font-size: 12px;
-        font-weight: bold;
-        color: #888;
-        padding: 5px 0;
-        margin-bottom: 8px;
-        border-bottom: 2px solid #e0e5ec;
+        margin-top: 40px;
       }
+
       .order-list {
+        width: 45%;
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+        background: linear-gradient(135deg, #f5f5f5 25%, #e0e0e0 75%);
+      }
+
+      .order-list h3 {
+        text-align: center;
+        font-size: 1.6em;
+        margin-bottom: 20px;
+        color: #444;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+      }
+
+      .order-list ul {
         list-style: none;
         padding: 0;
-        max-height: 200px;
-        overflow-y: auto;
       }
+
       .order-list li {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px;
-        margin: 5px 0;
+        padding: 12px;
+        margin: 8px 0;
+        background-color: #62939c;
+        color: white;
+        border-radius: 8px;
+        font-size: 1.1em;
+        box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.3s ease;
+      }
+
+      .order-list li:hover {
+        background-color: #78d0f0;
+        transform: scale(1.05);
+      }
+
+      .buy {
+        background-color: #4caf50;
+        font-weight: bold;
+      }
+
+      .sell {
+        background-color: #f44336;
+        font-weight: bold;
+      }
+      #sell {
+        background-color: #f44336;
+        font-weight: bold;
+      }
+      #market-sell {
+        background-color: #f44336;
+        font-weight: bold;
+      }
+
+      .trade-log {
+        margin-top: 40px;
+        background-color: #fff;
+        padding: 20px;
         border-radius: 10px;
-        background-color: #e0e5ec;
-        box-shadow: inset 4px 4px 8px #c5cace, inset -4px -4px 8px #ffffff;
-      }
-      .buy-order {
-        color: #00cd1f;
-        font-weight: bold;
-      }
-      .sell-order {
-        color: #ff1100;
-        font-weight: bold;
-      }
-      /* span class */
-      .order-quantity {
-        color: #000000;
-        font-weight: bold;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        background: linear-gradient(135deg, #e0e0e0 25%, #f5f5f5 75%);
       }
 
-      .price-up {
-        color: rgb(0, 192, 0); /* Optional styling for price-up */
-        font-weight: bold;
+      .trade-log h3 {
+        text-align: center;
+        font-size: 1.6em;
+        margin-bottom: 20px;
+        color: #444;
       }
 
-      .price-down {
-        color: red; /* Optional styling for price-down */
-        font-weight: bold;
+      .ltp {
+        margin-top: 30px;
+        font-size: 1.5em;
+        text-align: center;
+        color: #252121;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
       }
 
-      .percentage-up {
-        color: rgb(0, 215, 0); /* Optional styling for percentage-up */
+      .ltp span {
+        font-size: 1.8em;
+        color: #ff6347;
         font-weight: bold;
-      }
-
-      .percentage-down {
-        color: red; /* Optional styling for percentage-down */
-        font-weight: bold;
-      }
-
-      /* Scrollbar styling */
-      .order-list::-webkit-scrollbar {
-        width: 6px;
-      }
-      .order-list::-webkit-scrollbar-track {
-        background: #f1f1f1;
-      }
-      .order-list::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 5px;
-      }
-      .order-list::-webkit-scrollbar-thumb:hover {
-        background: #555;
       }
     </style>
   </head>
   <body>
-    <div class="container" ng-app="stockApp" ng-controller="stockController">
-      <h2>Real-Time OXO Prices</h2>
+    <div class="container">
+      <h1>Order Book Engine with LTP</h1>
 
-      <div class="price-list">
-        <p>OXO prices that update in real time:</p>
-        <ul>
-          <li ng-repeat="stock in stocks">
-            <strong>{{ stock.name }}:</strong>
-            <span
-              ng-class="{'price-up': stock.price > stock.previousPrice, 'price-down': stock.price < stock.previousPrice}"
-            >
-              ${{ stock.price | number:4 }}
-            </span>
-            <span
-              ng-class="{'percentage-up': stock.price > stock.startingPrice, 'percentage-down': stock.price < stock.startingPrice}"
-            >
-              ({{ (stock.percentChange | number:2) }}%)
-            </span>
-          </li>
-        </ul>
-      </div>
-
-      <div class="order-book-section">
-        <!-- Buy Orders -->
-        <div class="order-book">
-          <h3>Buy Orders</h3>
-          <div class="order-header">
-            <span>Price (USD)</span>
-            <span>Quantity</span>
-          </div>
-          <ul class="order-list">
-            <li ng-repeat="order in filteredBuyOrders">
-              <span class="buy-order">${{ order.price | number:4 }}</span>
-              <span class="order-quantity">{{ order.quantity }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Sell Orders -->
-        <div class="order-book">
-          <h3>Sell Orders</h3>
-          <div class="order-header">
-            <span>Price (USD)</span>
-            <span>Quantity</span>
-          </div>
-          <ul class="order-list">
-            <li ng-repeat="order in filteredSellOrders">
-              <span class="sell-order">${{ order.price | number:4 }}</span>
-              <span class="order-quantity">{{ order.quantity }}</span>
-            </li>
-          </ul>
-        </div>
+      <!-- Last Traded Price (LTP) -->
+      <div class="ltp">
+        <strong>Last Traded Price (LTP):</strong>
+        <span id="ltp">N/A</span>
       </div>
     </div>
 
+    <!-- Order Form -->
+    <div class="order-form">
+      <input type="number" id="price" placeholder="Price" step="0.01" />
+      <input type="number" id="quantity" placeholder="Quantity" min="1" />
+      <button onclick="placeOrder('buy')">Buy</button>
+      <button id="sell" onclick="placeOrder('sell')">Sell</button>
+    </div>
+
+    <!-- Market Buy Form -->
+    <div class="market-order-form">
+      <input
+        type="number"
+        id="marketQuantityBuy"
+        placeholder="Market Buy Quantity"
+        min="1"
+      />
+      <button onclick="placeMarketOrder('buy')">Market Buy</button>
+    </div>
+
+    <!-- Market Sell Form -->
+    <div class="market-order-form">
+      <input
+        type="number"
+        id="marketQuantitySell"
+        placeholder="Market Sell Quantity"
+        min="1"
+      />
+      <button id="market-sell" onclick="placeMarketOrder('sell')">
+        Market Sell
+      </button>
+    </div>
+
+    <!-- Order Book -->
+    <div class="order-book">
+      <div class="order-list">
+        <h3>Buy Orders</h3>
+        <ul id="buyOrdersList"></ul>
+      </div>
+      <div class="order-list">
+        <h3>Sell Orders</h3>
+        <ul id="sellOrdersList"></ul>
+      </div>
+    </div>
+
+    <!-- Trade Log -->
+    <div class="trade-log">
+      <h3>Trade Execution Log</h3>
+      <ul id="tradeLog"></ul>
+    </div>
+
     <script>
-      var app = angular.module("stockApp", []);
+      class OrderBook {
+        constructor() {
+          this.buyOrders = [];
+          this.sellOrders = [];
+          this.lastTradedPrice = null;
+        }
 
-      app.controller("stockController", function ($scope, $timeout) {
-        $scope.stocks = [
-          {
-            name: "OXO",
-            price: 0.0251,
-            previousPrice: 0.0251,
-            startingPrice: 0.0251,
-            percentChange: 0,
-          },
-        ];
+        addBuyOrder(price, quantity) {
+          const buyOrder = { price, quantity };
+          this.buyOrders.push(buyOrder);
+          this.buyOrders.sort((a, b) => b.price - a.price);
+          this.matchOrders();
+        }
 
-        $scope.buyOrders = [];
-        $scope.sellOrders = [];
+        addSellOrder(price, quantity) {
+          const sellOrder = { price, quantity };
+          this.sellOrders.push(sellOrder);
+          this.sellOrders.sort((a, b) => a.price - b.price);
+          this.matchOrders();
+        }
 
-        function generateOrderBook() {
-          $scope.buyOrders = [];
-          $scope.sellOrders = [];
+        matchOrders() {
+          while (this.buyOrders.length > 0 && this.sellOrders.length > 0) {
+            const bestBuyOrder = this.buyOrders[0];
+            const bestSellOrder = this.sellOrders[0];
 
-          const marketPrice = $scope.stocks[0].price;
-          const lowerLimit = marketPrice * 0.9;
-          const upperLimit = marketPrice * 1.1;
+            if (bestBuyOrder.price >= bestSellOrder.price) {
+              const tradeQuantity = Math.min(
+                bestBuyOrder.quantity,
+                bestSellOrder.quantity
+              );
+              const tradePrice = bestSellOrder.price;
+              logTrade(tradePrice, tradeQuantity);
+              this.updateLTP(tradePrice);
 
-          for (let i = 0; i < 10; i++) {
-            const buyPrice = parseFloat(
-              (marketPrice - Math.random() * 0.001).toFixed(4)
-            );
-            const sellPrice = parseFloat(
-              (marketPrice + Math.random() * 0.001).toFixed(4)
-            );
+              bestBuyOrder.quantity -= tradeQuantity;
+              bestSellOrder.quantity -= tradeQuantity;
 
-            if (buyPrice >= lowerLimit) {
-              $scope.buyOrders.push({
-                price: buyPrice,
-                quantity: Math.round((Math.random() * 1000000) / 10) * 10 + 100,
-              });
-            }
-            if (sellPrice <= upperLimit) {
-              $scope.sellOrders.push({
-                price: sellPrice,
-                quantity: Math.round((Math.random() * 1000000) / 10) * 10 + 100,
-              });
+              if (bestBuyOrder.quantity === 0) {
+                this.buyOrders.shift();
+              }
+              if (bestSellOrder.quantity === 0) {
+                this.sellOrders.shift();
+              }
+            } else {
+              break;
             }
           }
-
-          $scope.buyOrders.sort((a, b) => b.price - a.price);
-          $scope.sellOrders.sort((a, b) => a.price - b.price);
-
-          $scope.filteredBuyOrders = $scope.buyOrders.filter(
-            (order) => order.price >= lowerLimit
-          );
-          $scope.filteredSellOrders = $scope.sellOrders.filter(
-            (order) => order.price <= upperLimit
-          );
         }
 
-        function updateStockPrices() {
-          $scope.stocks.forEach(function (stock) {
-            var prevPrice = stock.price;
-            var change = (Math.random() * 0.001 - 0.0005).toFixed(4);
-            stock.price = parseFloat(
-              (stock.price + parseFloat(change)).toFixed(4)
-            );
-            stock.percentChange = (
-              ((stock.price - stock.startingPrice) / stock.startingPrice) *
-              100
-            ).toFixed(2);
-            stock.previousPrice = prevPrice;
+        updateLTP(price) {
+          this.lastTradedPrice = price;
+          document.getElementById(
+            "ltp"
+          ).textContent = `$${this.lastTradedPrice.toFixed(2)}`;
+        }
+
+        displayOrderBook() {
+          const buyOrdersList = document.getElementById("buyOrdersList");
+          const sellOrdersList = document.getElementById("sellOrdersList");
+
+          buyOrdersList.innerHTML = "";
+          sellOrdersList.innerHTML = "";
+
+          this.buyOrders.forEach((order) => {
+            const listItem = document.createElement("li");
+            listItem.textContent = `Price: $${order.price}, Quantity: ${order.quantity}`;
+            listItem.classList.add("buy");
+            buyOrdersList.appendChild(listItem);
           });
 
-          generateOrderBook();
-          var randomInterval = Math.floor(Math.random() * 4000) + 1000;
-          $timeout(updateStockPrices, randomInterval);
+          this.sellOrders.forEach((order) => {
+            const listItem = document.createElement("li");
+            listItem.textContent = `Price: $${order.price}, Quantity: ${order.quantity}`;
+            listItem.classList.add("sell");
+            sellOrdersList.appendChild(listItem);
+          });
         }
 
-        updateStockPrices();
-      });
+        processMarketBuy(quantity) {
+          while (quantity > 0 && this.sellOrders.length > 0) {
+            const bestSellOrder = this.sellOrders[0];
+            const tradeQuantity = Math.min(quantity, bestSellOrder.quantity);
+            const tradePrice = bestSellOrder.price;
+
+            logTrade(tradePrice, tradeQuantity);
+            this.updateLTP(tradePrice);
+
+            bestSellOrder.quantity -= tradeQuantity;
+            quantity -= tradeQuantity;
+
+            if (bestSellOrder.quantity === 0) {
+              this.sellOrders.shift();
+            }
+          }
+        }
+
+        processMarketSell(quantity) {
+          while (quantity > 0 && this.buyOrders.length > 0) {
+            const bestBuyOrder = this.buyOrders[0];
+            const tradeQuantity = Math.min(quantity, bestBuyOrder.quantity);
+            const tradePrice = bestBuyOrder.price;
+
+            logTrade(tradePrice, tradeQuantity);
+            this.updateLTP(tradePrice);
+
+            bestBuyOrder.quantity -= tradeQuantity;
+            quantity -= tradeQuantity;
+
+            if (bestBuyOrder.quantity === 0) {
+              this.buyOrders.shift();
+            }
+          }
+        }
+      }
+
+      const orderBook = new OrderBook();
+
+      function placeOrder(type) {
+        const price = parseFloat(document.getElementById("price").value);
+        const quantity = parseInt(document.getElementById("quantity").value);
+
+        if (isNaN(price) || isNaN(quantity) || quantity <= 0) {
+          alert("Please enter valid price and quantity.");
+          return;
+        }
+
+        if (type === "buy") {
+          orderBook.addBuyOrder(price, quantity);
+        } else if (type === "sell") {
+          orderBook.addSellOrder(price, quantity);
+        }
+
+        orderBook.displayOrderBook();
+      }
+
+      function placeMarketOrder(type) {
+        let quantity;
+        if (type === "buy") {
+          quantity = parseInt(
+            document.getElementById("marketQuantityBuy").value
+          );
+        } else if (type === "sell") {
+          quantity = parseInt(
+            document.getElementById("marketQuantitySell").value
+          );
+        }
+
+        if (isNaN(quantity) || quantity <= 0) {
+          alert("Please enter a valid quantity.");
+          return;
+        }
+
+        if (type === "buy") {
+          orderBook.processMarketBuy(quantity);
+        } else if (type === "sell") {
+          orderBook.processMarketSell(quantity);
+        }
+
+        orderBook.displayOrderBook();
+      }
+
+      function logTrade(price, quantity) {
+        const log = document.getElementById("tradeLog");
+        const listItem = document.createElement("li");
+        listItem.textContent = `Trade Executed: Price = $${price}, Quantity = ${quantity}`;
+        log.appendChild(listItem);
+      }
     </script>
   </body>
 </html>
